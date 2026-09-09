@@ -5,7 +5,7 @@
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](https://python.org)
 [![Antigravity Compatible](https://img.shields.io/badge/Antigravity-Agent%20Skill-purple.svg)](https://github.com/markknoffler/Astra_skill)
 
-**Astra Skill** is an enterprise-grade agentic skill inspired by **GPT-6 Astra** designed to grant AI models autonomous, continuous screen perception and precision OS-level computer control.
+**Astra Skill** is a model-driven computer perception and control skill inspired by **GPT-6 Astra** designed to grant AI models autonomous, continuous screen perception and precision OS-level computer control.
 
 Unlike conventional macro bots that blindly fire coordinate clicks, Astra operates in a **continuous closed-loop perception-action-verification cycle**: the agent visually perceives the screen, overlays a sub-pixel logical coordinate grid, reasons about UI state changes, dispatches atomic mouse and keyboard strokes, visually verifies the outcome, and maintains persistent episodic memory across a rolling FIFO screenshot buffer.
 
@@ -25,7 +25,7 @@ Unlike conventional macro bots that blindly fire coordinate clicks, Astra operat
 - [Repository Structure](#-repository-structure)
 - [Prerequisites & Installation](#-prerequisites--installation)
 - [CLI Quickstart & Usage Guide](#-cli-quickstart--usage-guide)
-- [Agent Integration (Antigravity, Claude, Custom LLMs)](#-agent-integration)
+- [Agent Integration (Antigravity, RAYS, OpenCode, Cursor, Claude, Codex, Hermes)](#-agent-integration)
 - [Privacy, Safety & Zero-Screenshot Git Discipline](#-privacy--zero-screenshot-discipline)
 
 ---
@@ -243,17 +243,91 @@ python3 scripts/keyboard_action.py stream --file my_script.py --wpm 650
 python3 scripts/floating_overlay.py --image screenshots/latest.png --width 420 --height 270
 ```
 
----
-
 ## 🤖 Agent Integration
 
-### Loading into Google Antigravity / Gemini CLI
-To equip Antigravity agents with the Astra Skill:
-1. Place the `Astra_skill` directory into your project's `.agents/skills/` directory (or user global `~/.gemini/antigravity/skills/`).
-2. Antigravity automatically parses `SKILL.md` frontmatter and equips the calling model with all perception, mouse, and keyboard tools.
+Astra Skill follows open agent skill standards (`SKILL.md` specification with YAML frontmatter) making it directly compatible with all major modern coding agents and multi-agent orchestrators.
 
-### Activating in Custom LLM Pipelines (OpenAI, Anthropic, LangChain)
-Point your agent's system prompt to `SKILL.md`. The model will utilize tool-calling schemas to invoke `python3 scripts/screen_capture.py` and inspect returned coordinate metadata before issuing commands.
+### 1. Google Antigravity & Gemini CLI
+Antigravity automatically discovers and activates skills placed in standard skill locations:
+- **Project-Level**: Place in `.agents/skills/gpt-6-astra` within your workspace.
+- **Global User-Level**: Place in `~/.gemini/antigravity/skills/gpt-6-astra` or `~/.gemini/antigravity-cli/builtin/skills/gpt-6-astra`.
+Antigravity parses the YAML frontmatter and dynamically exposes the perception, mouse, and keyboard tools to the planner.
+
+### 2. RAYS Coding Agent
+On Linux and macOS environments, RAYS manages external skill extensions from the `~/.rays` directory in the user's home path:
+```bash
+# Create the RAYS skills directory if not present
+mkdir -p ~/.rays/skills
+
+# Copy or symlink Astra Skill into RAYS
+cp -r Astra_skill ~/.rays/skills/gpt-6-astra
+# Or create a symlink:
+ln -s $(pwd)/Astra_skill ~/.rays/skills/gpt-6-astra
+```
+In your `~/.rays/config.yaml` (or project-level `.rays/config.json`), register `gpt-6-astra` in the active skill registry:
+```yaml
+skills:
+  - name: gpt-6-astra
+    path: ~/.rays/skills/gpt-6-astra
+    entry: SKILL.md
+```
+RAYS parses the skill manifest and binds the script actions to its tool dispatcher.
+
+### 3. OpenCode (OpenCodeInterpreter & OpenCode Agent)
+OpenCode natively consumes standard skill manifests:
+```bash
+# Global OpenCode skills directory
+mkdir -p ~/.opencode/skills
+cp -r Astra_skill ~/.opencode/skills/gpt-6-astra
+
+# Or project-level
+mkdir -p .opencode/skills
+cp -r Astra_skill .opencode/skills/gpt-6-astra
+```
+OpenCode parses `SKILL.md` and registers the CLI scripts into its bash execution tool set.
+
+### 4. Cursor (Cursor IDE & Cursor Composer)
+To equip Cursor Agent / Composer with Astra's computer control capabilities:
+1. Copy `Astra_skill` into your workspace root.
+2. Add a Cursor rule file at `.cursor/rules/astra.mdc` (or add to `.cursorrules`):
+```markdown
+---
+description: Autonomous screen perception and computer control via Astra Skill
+globs: *
+---
+You have access to the Astra Skill located in `Astra_skill/`.
+- For visual screen perception: Run `python3 Astra_skill/scripts/screen_capture.py` (or `--app <AppName>`).
+- For cursor actions: Run `python3 Astra_skill/scripts/mouse_action.py <action> --x <X> --y <Y>`.
+- For keyboard actions: Run `python3 Astra_skill/scripts/keyboard_action.py <action>`.
+Always follow the perception-action-verification loop: capture -> inspect -> act -> verify.
+```
+
+### 5. Claude (Claude Code CLI & Claude Desktop)
+- **Claude Code CLI**: Place in `.claude/skills/gpt-6-astra` or reference `Astra_skill/SKILL.md` directly in your workspace `CLAUDE.md`.
+- **Claude Desktop**: Wrap `scripts/screen_capture.py`, `scripts/mouse_action.py`, and `scripts/keyboard_action.py` in an MCP (Model Context Protocol) server or run via desktop terminal execution.
+
+### 6. Codex & OpenAI Assistants / Operator
+- Point the system prompt or assistant instructions to `Astra_skill/SKILL.md`.
+- Provide the CLI execution schemas for `scripts/screen_capture.py`, `scripts/mouse_action.py`, and `scripts/keyboard_action.py` as callable bash/function tools.
+
+### 7. Hermes (Nous Hermes & Hermes Agent Framework)
+Hermes automatically ingests standard skill directories:
+```bash
+mkdir -p ~/.hermes/skills
+cp -r Astra_skill ~/.hermes/skills/gpt-6-astra
+```
+Hermes reads `SKILL.md` frontmatter and maps the tool schemas directly into Hermes function-calling definitions.
+
+### 8. Universal LLM Frameworks (LangChain, AutoGen, CrewAI, LlamaIndex)
+You can directly import the Python modules into custom agent frameworks:
+```python
+from Astra_skill.scripts.screen_capture import capture_raw_screen
+from Astra_skill.scripts.mouse_action import execute_mouse_action
+from Astra_skill.scripts.keyboard_action import execute_keyboard_action
+
+# Wrap as LangChain Tool / AutoGen function
+```
+Or execute the scripts as standalone shell tools in any agent tool registry.
 
 ---
 
